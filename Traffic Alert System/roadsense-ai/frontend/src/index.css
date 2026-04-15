@@ -1,0 +1,27 @@
+/* Leaflet default styles must precede Tailwind directives */
+@import "leaflet/dist/leaflet.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+/* Smooth scroll for landing marketing sections */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Animated route dashes on Leaflet vector layers */
+@keyframes roadsense-dash {
+  to {
+    stroke-dashoffset: -40;
+  }
+}
+.leaflet-overlay-pane svg path.roadsense-route-line {
+  animation: roadsense-dash 1.4s linear infinite;
+}
