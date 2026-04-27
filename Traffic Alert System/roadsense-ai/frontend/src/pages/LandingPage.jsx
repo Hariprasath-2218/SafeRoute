@@ -5,8 +5,16 @@ import Navbar from "../components/layout/Navbar.jsx";
 import Footer from "../components/layout/Footer.jsx";
 
 const stats = [
-  { label: "Predictions served", value: "2.3M+", sub: "Simulated enterprise volume" },
-  { label: "Model accuracy", value: "94.2%", sub: "Production-tier validation" },
+  {
+    label: "Predictions served",
+    value: "2.3M+",
+    sub: "Simulated enterprise volume",
+  },
+  {
+    label: "Model accuracy",
+    value: "94.2%",
+    sub: "Production-tier validation",
+  },
   { label: "Cities monitored", value: "20+", sub: "Pan-India coverage" },
 ];
 
@@ -18,7 +26,11 @@ export default function LandingPage() {
       <main className="flex-1">
         <section className="relative overflow-hidden">
           <div className="pointer-events-none absolute inset-0 opacity-40">
-            <svg className="h-full w-full" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice">
+            <svg
+              className="h-full w-full"
+              viewBox="0 0 800 500"
+              preserveAspectRatio="xMidYMid slice"
+            >
               <defs>
                 <linearGradient id="g1" x1="0" x2="1" y1="0" y2="1">
                   <stop stopColor="#3B82F6" stopOpacity="0.35" />
@@ -37,9 +49,20 @@ export default function LandingPage() {
                 strokeWidth="3"
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: 1 }}
-                transition={{ duration: 2.4, repeat: Infinity, repeatType: "reverse" }}
+                transition={{
+                  duration: 2.4,
+                  repeat: Infinity,
+                  repeatType: "reverse",
+                }}
               />
-              <motion.circle cx="420" cy="160" r="6" fill="#10B981" animate={{ r: [6, 10, 6] }} transition={{ duration: 2, repeat: Infinity }} />
+              <motion.circle
+                cx="420"
+                cy="160"
+                r="6"
+                fill="#10B981"
+                animate={{ r: [6, 10, 6] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
             </svg>
           </div>
 
@@ -62,8 +85,9 @@ export default function LandingPage() {
                 Protect.
               </motion.h1>
               <p className="max-w-xl text-lg text-txt-secondary">
-                RoadSense AI blends operational maps, telematics context, and calibrated machine learning
-                to surface route-risk before the sirens activate.
+                RoadSense AI blends operational maps, telematics context, and
+                calibrated machine learning to surface route-risk before the
+                sirens activate.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link
@@ -90,8 +114,12 @@ export default function LandingPage() {
                   transition={{ delay: 0.15 * i }}
                   className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-glass backdrop-blur-md"
                 >
-                  <p className="font-mono text-2xl font-semibold text-white">{s.value}</p>
-                  <p className="mt-1 text-sm font-medium text-txt-primary">{s.label}</p>
+                  <p className="font-mono text-2xl font-semibold text-white">
+                    {s.value}
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-txt-primary">
+                    {s.label}
+                  </p>
                   <p className="text-xs text-txt-secondary">{s.sub}</p>
                 </motion.div>
               ))}
@@ -110,19 +138,25 @@ export default function LandingPage() {
                 SafeRoute — live GPS, weather risk, and ETA in your pocket
               </h2>
               <p className="text-txt-secondary">
-                The companion SafeRoute app pairs Google Maps directions with OpenWeather risk scoring, Gorhom
-                trip sheets, and interval predictions aligned with the same route-safety philosophy as RoadSense AI on
-                the web.
+                The companion SafeRoute app pairs Google Maps directions with
+                OpenWeather risk scoring, Gorhom trip sheets, and interval
+                predictions aligned with the same route-safety philosophy as
+                RoadSense AI on the web.
               </p>
               <p className="text-sm text-txt-secondary">
                 Run it locally with Expo from{" "}
-                <span className="font-mono text-txt-primary">roadsense-ai/saferoute-mobile</span>:{" "}
-                <span className="font-mono text-txt-primary">npx expo start</span>
+                <span className="font-mono text-txt-primary">
+                  roadsense-ai/saferoute-mobile
+                </span>
+                :{" "}
+                <span className="font-mono text-txt-primary">
+                  npx expo start
+                </span>
               </p>
             </div>
             <div className="flex justify-center">
               <img
-                src="/SafeRoute.jpeg"
+                src="/SafeRoute.png"
                 alt="SafeRoute app logo"
                 className="h-44 w-44 rounded-3xl border border-border bg-bg-card object-cover shadow-glass"
               />
@@ -130,28 +164,51 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="features" className="border-t border-border bg-bg-secondary/40 py-20">
+        <section
+          id="features"
+          className="border-t border-border bg-bg-secondary/40 py-20"
+        >
           <div className="mx-auto max-w-7xl px-4 lg:px-8">
             <div className="mb-12 max-w-2xl">
-              <h2 className="font-display text-3xl font-bold text-txt-primary">Built for mission control</h2>
+              <h2 className="font-display text-3xl font-bold text-txt-primary">
+                Built for mission control
+              </h2>
               <p className="mt-2 text-txt-secondary">
-                Glass surfaces, live geospatial layers, and auditable prediction history — the baseline
-                your SOC expects.
+                Glass surfaces, live geospatial layers, and auditable prediction
+                history — the baseline your SOC expects.
               </p>
             </div>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               {[
-                { title: "Neural risk scoring", body: "Random Forest vs XGBoost tournament with balanced classes.", icon: Brain },
-                { title: "Map-native workflows", body: "Point and corridor analysis with OSM basemaps — zero API keys.", icon: MapPin },
-                { title: "JWT-secured tenancy", body: "Bcrypt-hashed identities and per-user prediction history.", icon: ShieldCheck },
-                { title: "Operational telemetry", body: "Heatmaps and timelines synthesize millions of contextual features.", icon: Activity },
+                {
+                  title: "Neural risk scoring",
+                  body: "Random Forest vs XGBoost tournament with balanced classes.",
+                  icon: Brain,
+                },
+                {
+                  title: "Map-native workflows",
+                  body: "Point and corridor analysis with OSM basemaps — zero API keys.",
+                  icon: MapPin,
+                },
+                {
+                  title: "JWT-secured tenancy",
+                  body: "Bcrypt-hashed identities and per-user prediction history.",
+                  icon: ShieldCheck,
+                },
+                {
+                  title: "Operational telemetry",
+                  body: "Heatmaps and timelines synthesize millions of contextual features.",
+                  icon: Activity,
+                },
               ].map((f) => (
                 <div
                   key={f.title}
                   className="rounded-2xl border border-border bg-bg-card/80 p-6 shadow-glass backdrop-blur-xl"
                 >
                   <f.icon className="h-8 w-8 text-accent-primary" />
-                  <h3 className="mt-4 font-display text-lg font-semibold text-txt-primary">{f.title}</h3>
+                  <h3 className="mt-4 font-display text-lg font-semibold text-txt-primary">
+                    {f.title}
+                  </h3>
                   <p className="mt-2 text-sm text-txt-secondary">{f.body}</p>
                 </div>
               ))}

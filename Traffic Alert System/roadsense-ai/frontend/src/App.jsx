@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import ProtectedRoute from "./components/auth/ProtectedRoute.jsx";
 import AppShell from "./components/layout/AppShell.jsx";
@@ -13,6 +15,12 @@ import RoutePredictionPage from "./pages/RoutePredictionPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx";
 import AiAssistantPage from "./pages/AiAssistantPage.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
+
+import { ThemeProvider } from "./context/ThemeContext.jsx";
+
+import { ThemeProvider } from "./context/ThemeContext.jsx";
+
+import { ThemeProvider } from "./context/ThemeContext.jsx";
 
 function FadeRoute({ children }) {
   const location = useLocation();
@@ -30,69 +38,71 @@ function FadeRoute({ children }) {
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
+    <ThemeProvider>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
 
-      <Route
-        element={
-          <ProtectedRoute>
-            <AppShell />
-          </ProtectedRoute>
-        }
-      >
         <Route
-          path="/dashboard"
           element={
-            <FadeRoute>
-              <DashboardPage />
-            </FadeRoute>
+            <ProtectedRoute>
+              <AppShell />
+            </ProtectedRoute>
           }
-        />
-        <Route
-          path="/map"
-          element={
-            <FadeRoute>
-              <MapPredictionPage />
-            </FadeRoute>
-          }
-        />
-        <Route
-          path="/route"
-          element={
-            <FadeRoute>
-              <RoutePredictionPage />
-            </FadeRoute>
-          }
-        />
-        <Route
-          path="/history"
-          element={
-            <FadeRoute>
-              <HistoryPage />
-            </FadeRoute>
-          }
-        />
-        <Route
-          path="/ai"
-          element={
-            <FadeRoute>
-              <AiAssistantPage />
-            </FadeRoute>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <FadeRoute>
-              <SettingsPage />
-            </FadeRoute>
-          }
-        />
-      </Route>
+        >
+          <Route
+            path="/dashboard"
+            element={
+              <FadeRoute>
+                <DashboardPage />
+              </FadeRoute>
+            }
+          />
+          <Route
+            path="/map"
+            element={
+              <FadeRoute>
+                <MapPredictionPage />
+              </FadeRoute>
+            }
+          />
+          <Route
+            path="/route"
+            element={
+              <FadeRoute>
+                <RoutePredictionPage />
+              </FadeRoute>
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              <FadeRoute>
+                <HistoryPage />
+              </FadeRoute>
+            }
+          />
+          <Route
+            path="/ai"
+            element={
+              <FadeRoute>
+                <AiAssistantPage />
+              </FadeRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <FadeRoute>
+                <SettingsPage />
+              </FadeRoute>
+            }
+          />
+        </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </ThemeProvider>
   );
 }

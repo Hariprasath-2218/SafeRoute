@@ -10,6 +10,8 @@ import {
   PieChart,
   Pie,
   Cell,
+  CartesianGrid,
+  Legend,
 } from "recharts";
 import { Download, Trash2 } from "lucide-react";
 import { fetchHistory, deleteHistoryItem } from "../api/prediction.js";
@@ -17,12 +19,23 @@ import { formatDate } from "../utils/formatters.js";
 import { severityToColor } from "../utils/riskColors.js";
 
 const DONUT_COLORS = ["#10B981", "#EAB308", "#F97316", "#EF4444"];
+const SEVERITY_LEVELS = ["Low", "Medium", "High", "Critical"];
+const WEATHER_COLORS = [
+  "#60A5FA",
+  "#34D399",
+  "#F59E0B",
+  "#A78BFA",
+  "#F87171",
+  "#22D3EE",
+];
 
 export default function HistoryPage() {
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(50);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [city, setCity] = useState("");
   const [severity, setSeverity] = useState("");
   const [dateFrom, setDateFrom] = useState("");
@@ -31,7 +44,12 @@ export default function HistoryPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const params = { page, limit: 15, city: city || undefined, severity: severity || undefined };
+      const params = {
+        page,
+        limit,
+        city: city || undefined,
+        severity: severity || undefined,
+      };
       if (dateFrom) params.date_from = `${dateFrom}T00:00:00`;
       if (dateTo) params.date_to = `${dateTo}T23:59:59`;
       const data = await fetchHistory(params);
@@ -47,7 +65,7 @@ export default function HistoryPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, city, severity, dateFrom, dateTo]);
+  }, [page, limit, city, severity, dateFrom, dateTo]);
 
   const timeSeries = useMemo(() => {
     const buckets = {};
@@ -70,22 +88,97 @@ export default function HistoryPage() {
     return Object.entries(m).map(([name, value]) => ({ name, value }));
   }, [items]);
 
-  const exportCsv = () => {
-    const header = ["id", "type", "city", "risk", "severity", "created_at"];
-    const lines = [header.join(",")].concat(
-      items.map((r) =>
-        [r.id, r.prediction_type, JSON.stringify(r.city), r.risk_score, r.severity_level, r.created_at].join(
-          ","
-        )
-      )
-    );
-    const blob = new Blob([lines.join("\n")], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "roadsense-history.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+  const daySeveritySeries = useMemo(() => {
+    const byDay = {};
+    for (const row of items) {
+      const day = (row.created_at || "").slice(0, 10);
+      if (!day) continue;
+      if (!byDay[day]) {
+        byDay[day] = { date: day, Low: 0, Medium: 0, High: 0, Critical: 0 };
+      }
+      const sev = row.severity_level;
+      if (SEVERITY_LEVELS.includes(sev)) {
+        byDay[day][sev] += 1;
+      }
+    }
+    return Object.values(byDay).sort((a, b) => a.date.localeCompare(b.date));
+  }, [items]);
+
+  const weatherMix = useMemo(() => {
+    const bucket = {};
+    for (const row of items) {
+      const key =
+        String(row.weather_condition || "Unknown")
+          .trim()
+          .split(" ")[0]
+          .replace(/[^a-zA-Z]/g, "") || "Unknown";
+      bucket[key] = (bucket[key] || 0) + 1;
+    }
+    return Object.entries(bucket)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8);
+  }, [items]);
+
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const baseParams = {
+        city: city || undefined,
+        severity: severity || undefined,
+      };
+      if (dateFrom) baseParams.date_from = `${dateFrom}T00:00:00`;
+      if (dateTo) baseParams.date_to = `${dateTo}T23:59:59`;
+
+      const first = await fetchHistory({ ...baseParams, page: 1, limit: 500 });
+      const all = [...(first.items || [])];
+      const totalRows = first.total || all.length;
+      const pages = Math.max(1, Math.ceil(totalRows / 500));
+
+      for (let p = 2; p <= pages; p += 1) {
+        const pageData = await fetchHistory({
+          ...baseParams,
+          page: p,
+          limit: 500,
+        });
+        all.push(...(pageData.items || []));
+      }
+
+      const header = [
+        "id",
+        "type",
+        "city",
+        "weather_condition",
+        "risk",
+        "severity",
+        "created_at",
+      ];
+      const lines = [header.join(",")].concat(
+        all.map((r) =>
+          [
+            r.id,
+            r.prediction_type,
+            JSON.stringify(r.city),
+            JSON.stringify(r.weather_condition || "Unknown"),
+            r.risk_score,
+            r.severity_level,
+            r.created_at,
+          ].join(","),
+        ),
+      );
+      const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "roadsense-history-filtered.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ${all.length} records`);
+    } catch (e) {
+      toast.error(e.userMessage || "Export failed");
+    } finally {
+      setExporting(false);
+    }
   };
 
   const onDelete = async (id) => {
@@ -102,8 +195,12 @@ export default function HistoryPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="font-display text-2xl font-bold text-txt-primary">Prediction history</h1>
-        <p className="text-txt-secondary">Filter, export, and visualize your workspace trail.</p>
+        <h1 className="font-display text-2xl font-bold text-txt-primary">
+          Prediction history
+        </h1>
+        <p className="text-txt-secondary">
+          Filter, export, and visualize your workspace trail.
+        </p>
       </div>
 
       <div className="grid gap-4 rounded-2xl border border-border bg-bg-card p-4 lg:grid-cols-4">
@@ -161,27 +258,55 @@ export default function HistoryPage() {
           />
         </div>
         <div className="flex items-end gap-2 lg:col-span-4">
+          <div>
+            <label className="text-xs text-txt-secondary">Rows per page</label>
+            <select
+              className="mt-1 w-full rounded-lg border-border bg-bg-secondary px-3 py-2 text-sm"
+              value={limit}
+              onChange={(e) => {
+                setLimit(Number(e.target.value));
+                setPage(1);
+              }}
+            >
+              {[15, 50, 100, 250, 500].map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
+            </select>
+          </div>
           <button
             type="button"
             onClick={exportCsv}
+            disabled={exporting}
             className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-sm"
           >
             <Download className="h-4 w-4" />
-            Export CSV ({items.length})
+            {exporting ? "Exporting..." : `Export filtered CSV (${total})`}
           </button>
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-border bg-bg-card p-4 shadow-glass">
-          <h3 className="mb-3 font-display text-lg font-semibold text-txt-primary">Predictions by day</h3>
+          <h3 className="mb-3 font-display text-lg font-semibold text-txt-primary">
+            Predictions by day
+          </h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={timeSeries}>
-                <XAxis dataKey="date" tick={{ fill: "#9CA3AF", fontSize: 11 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fill: "#9CA3AF", fontSize: 11 }}
+                />
                 <YAxis tick={{ fill: "#9CA3AF", fontSize: 11 }} />
                 <Tooltip
-                  contentStyle={{ background: "#1C2333", border: "1px solid #2D3748", borderRadius: 12 }}
+                  contentStyle={{
+                    background: "#1C2333",
+                    border: "1px solid #2D3748",
+                    borderRadius: 12,
+                  }}
                 />
                 <Bar dataKey="count" fill="#3B82F6" radius={[6, 6, 0, 0]} />
               </BarChart>
@@ -189,17 +314,99 @@ export default function HistoryPage() {
           </div>
         </div>
         <div className="rounded-2xl border border-border bg-bg-card p-4 shadow-glass">
-          <h3 className="mb-3 font-display text-lg font-semibold text-txt-primary">Severity mix</h3>
+          <h3 className="mb-3 font-display text-lg font-semibold text-txt-primary">
+            Severity mix
+          </h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={severityDonut} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80}>
+                <Pie
+                  data={severityDonut}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={50}
+                  outerRadius={80}
+                >
                   {severityDonut.map((_, i) => (
-                    <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />
+                    <Cell
+                      key={i}
+                      fill={DONUT_COLORS[i % DONUT_COLORS.length]}
+                    />
                   ))}
                 </Pie>
                 <Tooltip
-                  contentStyle={{ background: "#1C2333", border: "1px solid #2D3748", borderRadius: 12 }}
+                  contentStyle={{
+                    background: "#1C2333",
+                    border: "1px solid #2D3748",
+                    borderRadius: 12,
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-2xl border border-border bg-bg-card p-4 shadow-glass">
+          <h3 className="mb-3 font-display text-lg font-semibold text-txt-primary">
+            Predictions by day and severity mix
+          </h3>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={daySeveritySeries}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fill: "#9CA3AF", fontSize: 11 }}
+                />
+                <YAxis
+                  tick={{ fill: "#9CA3AF", fontSize: 11 }}
+                  allowDecimals={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "#1C2333",
+                    border: "1px solid #2D3748",
+                    borderRadius: 12,
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="Low" stackId="severity" fill="#10B981" />
+                <Bar dataKey="Medium" stackId="severity" fill="#EAB308" />
+                <Bar dataKey="High" stackId="severity" fill="#F97316" />
+                <Bar dataKey="Critical" stackId="severity" fill="#EF4444" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-border bg-bg-card p-4 shadow-glass">
+          <h3 className="mb-3 font-display text-lg font-semibold text-txt-primary">
+            Weather condition distribution
+          </h3>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={weatherMix}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={48}
+                  outerRadius={86}
+                >
+                  {weatherMix.map((_, i) => (
+                    <Cell
+                      key={i}
+                      fill={WEATHER_COLORS[i % WEATHER_COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    background: "#1C2333",
+                    border: "1px solid #2D3748",
+                    borderRadius: 12,
+                  }}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -217,6 +424,7 @@ export default function HistoryPage() {
                 <th className="px-4 py-3">When</th>
                 <th className="px-4 py-3">City</th>
                 <th className="px-4 py-3">Type</th>
+                <th className="px-4 py-3">Weather</th>
                 <th className="px-4 py-3">Risk</th>
                 <th className="px-4 py-3">Severity</th>
                 <th className="px-4 py-3" />
@@ -224,13 +432,23 @@ export default function HistoryPage() {
             </thead>
             <tbody>
               {items.map((row) => (
-                <tr key={row.id} className="border-t border-border hover:bg-bg-secondary/40">
+                <tr
+                  key={row.id}
+                  className="border-t border-border hover:bg-bg-secondary/40"
+                >
                   <td className="px-4 py-3 font-mono text-xs text-txt-secondary">
                     {formatDate(row.created_at)}
                   </td>
                   <td className="px-4 py-3">{row.city}</td>
-                  <td className="px-4 py-3 capitalize">{row.prediction_type}</td>
-                  <td className="px-4 py-3 font-mono">{Number(row.risk_score).toFixed(1)}</td>
+                  <td className="px-4 py-3 capitalize">
+                    {row.prediction_type}
+                  </td>
+                  <td className="px-4 py-3">
+                    {row.weather_condition || "Unknown"}
+                  </td>
+                  <td className="px-4 py-3 font-mono">
+                    {Number(row.risk_score).toFixed(1)}
+                  </td>
                   <td className="px-4 py-3">
                     <span
                       className="rounded-full px-2 py-0.5 text-xs font-medium"
@@ -259,7 +477,7 @@ export default function HistoryPage() {
         )}
         <div className="flex items-center justify-between border-t border-border px-4 py-3 text-sm text-txt-secondary">
           <span>
-            Page {page} — {total} records
+            Page {page} — showing {items.length} of {total} filtered records
           </span>
           <div className="flex gap-2">
             <button
@@ -273,7 +491,7 @@ export default function HistoryPage() {
             <button
               type="button"
               className="rounded-lg border border-border px-3 py-1 disabled:opacity-40"
-              disabled={page * 15 >= total}
+              disabled={page * limit >= total}
               onClick={() => setPage((p) => p + 1)}
             >
               Next

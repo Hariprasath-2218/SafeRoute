@@ -11,6 +11,7 @@ import { predictPoint, fetchHeatmapHistory } from "../api/prediction.js";
 import { reverseGeocode } from "../utils/nominatim.js";
 import { riskScoreToColor, severityToColor } from "../utils/riskColors.js";
 import { usePredictionCtx } from "../context/PredictionContext.jsx";
+import { registerPredictionForAlerts } from "../utils/predictionAlerts.js";
 
 function FlyTo({ center, zoom = 12 }) {
   const map = useMap();
@@ -116,6 +117,11 @@ export default function MapPredictionPage() {
       const data = await predictPoint(payload);
       setResult(data);
       setLastPoint(data);
+      registerPredictionForAlerts({
+        riskScore: data.risk_score,
+        severity: data.severity_level,
+        city: values.city,
+      });
       toast.success("Prediction ready");
     } catch (e) {
       toast.error(e.userMessage || "Prediction failed");

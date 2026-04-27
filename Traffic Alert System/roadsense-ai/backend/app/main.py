@@ -4,19 +4,25 @@ RoadSense AI — FastAPI entrypoint: MongoDB (Motor), JWT auth, ML inference, CO
 from contextlib import asynccontextmanager
 from datetime import datetime
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import close_db, connect_db, setup_indexes
 from app.routers import assistant, auth, history, ml, prediction
+from app.schemas.auth import LoginRequest, TokenResponse
 from app.services.ml_service import model_ready
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     """Connect MongoDB, ensure indexes, disconnect on shutdown."""
-    await connect_db()
-    setup_indexes()
+    db_ready = True
+    try:
+        await connect_db()
+        setup_indexes()
+    except Exception:  # noqa: BLE001
+        db_ready = False
+    _.state.db_ready = db_ready
     yield
     await close_db()
 
@@ -44,6 +50,28 @@ app.include_router(ml.router)
 app.include_router(assistant.router)
 
 
+@app.get("/")
+async def root() -> dict:
+    """Basic route index for browser checks and mobile debugging."""
+    return {
+        "status": "ok",
+        "routes": {
+            "health": "/health",
+            "login": "/auth/login",
+            "login_alias": "/login",
+            "register": "/auth/register",
+            "me": "/auth/me",
+            "history": "/history",
+        },
+    }
+
+
+@app.post("/login", response_model=TokenResponse, include_in_schema=False)
+async def login_alias(body: LoginRequest, response: Response) -> TokenResponse:
+    """Compatibility alias for direct testing from browser or tools."""
+    return await auth._login_user(body, response)
+
+
 @app.get("/health")
 async def health() -> dict:
     """Liveness: database ping and model file presence."""
@@ -60,6 +88,7 @@ async def health() -> dict:
     return {
         "status": "ok" if db_ok else "degraded",
         "db": "up" if db_ok else "down",
+        "server": "running",
         "model": "ready" if model_ready() else "missing",
         "timestamp": datetime.utcnow().isoformat() + "Z",
     }

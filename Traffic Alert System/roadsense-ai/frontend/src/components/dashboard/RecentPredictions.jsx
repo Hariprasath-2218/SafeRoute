@@ -24,6 +24,7 @@ export default function RecentPredictions({ items = [] }) {
               <th className="pb-2 pr-4 font-medium">When</th>
               <th className="pb-2 pr-4 font-medium">City</th>
               <th className="pb-2 pr-4 font-medium">Type</th>
+              <th className="pb-2 pr-4 font-medium">Weather</th>
               <th className="pb-2 pr-4 font-medium">Risk</th>
               <th className="pb-2 font-medium">Severity</th>
             </tr>
@@ -31,7 +32,7 @@ export default function RecentPredictions({ items = [] }) {
           <tbody className="divide-y divide-border">
             {items.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-6 text-center text-txt-secondary">
+                <td colSpan={6} className="py-6 text-center text-txt-secondary">
                   No predictions yet — start from the map workspace.
                 </td>
               </tr>
@@ -42,8 +43,15 @@ export default function RecentPredictions({ items = [] }) {
                   {formatDate(row.created_at)}
                 </td>
                 <td className="py-3 pr-4 text-txt-primary">{row.city}</td>
-                <td className="py-3 pr-4 capitalize text-txt-secondary">{row.prediction_type}</td>
-                <td className="py-3 pr-4 font-mono">{Number(row.risk_score).toFixed(1)}</td>
+                <td className="py-3 pr-4 capitalize text-txt-secondary">
+                  {row.prediction_type}
+                </td>
+                <td className="py-3 pr-4 text-txt-secondary">
+                  {row.weather_condition || "Unknown"}
+                </td>
+                <td className="py-3 pr-4 font-mono">
+                  {Number(row.risk_score).toFixed(1)}
+                </td>
                 <td className="py-3">
                   <span
                     className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"

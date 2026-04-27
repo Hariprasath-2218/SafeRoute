@@ -20,12 +20,14 @@ def _item(doc: dict) -> HistoryItem:
     src = doc.get("source_location") or {}
     lat = src.get("lat")
     lng = src.get("lng")
+    input_features = doc.get("input_features") or {}
     return HistoryItem(
         id=str(doc["_id"]),
         prediction_type=doc["prediction_type"],
         risk_score=float(doc["risk_score"]),
         severity_level=doc["severity_level"],
         city=doc.get("city", ""),
+        weather_condition=str(input_features.get("weather_condition") or "Unknown"),
         created_at=doc["created_at"].isoformat() if doc.get("created_at") else "",
         latitude=float(lat) if lat is not None else None,
         longitude=float(lng) if lng is not None else None,

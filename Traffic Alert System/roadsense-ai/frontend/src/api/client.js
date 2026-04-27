@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const baseURL = import.meta.env.VITE_API_URL || "http://172.28.66.246:8001";
 
 export const api = axios.create({
   baseURL,
@@ -18,12 +18,9 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (r) => r,
   (err) => {
-    const msg =
-      err.response?.data?.detail ||
-      err.message ||
-      "Request failed";
+    const msg = err.response?.data?.detail || err.message || "Request failed";
     const text = typeof msg === "string" ? msg : JSON.stringify(msg);
     err.userMessage = text;
     return Promise.reject(err);
-  }
+  },
 );

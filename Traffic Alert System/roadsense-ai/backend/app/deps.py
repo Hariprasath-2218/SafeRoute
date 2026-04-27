@@ -1,6 +1,6 @@
 """Shared FastAPI dependencies (JWT user resolution)."""
 from bson import ObjectId
-from fastapi import Depends, HTTPException, status
+from fastapi import Cookie, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.database import get_database
@@ -10,13 +10,19 @@ security = HTTPBearer(auto_error=True)
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(HTTPBearer(auto_error=False)),
+    access_token: str | None = Cookie(default=None),
 ) -> dict:
     """
     Validate Bearer token and load the user document from MongoDB.
     Used for /auth/me and all /predict/* and /history/* routes.
     """
-    token = credentials.credentials
+    token = credentials.credentials if credentials else access_token
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing access token",
+        )
     payload = decode_token(token)
     if not payload or "sub" not in payload:
         raise HTTPException(

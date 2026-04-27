@@ -21,6 +21,7 @@ import {
   getGoogleMapsApiKey,
 } from "../utils/googleGeocoding.js";
 import { usePredictionCtx } from "../context/PredictionContext.jsx";
+import { registerPredictionForAlerts } from "../utils/predictionAlerts.js";
 
 /**
  * Fit the map to the route polyline when scored; otherwise frame source + destination
@@ -238,6 +239,18 @@ export default function RoutePredictionPage() {
       const data = await predictRoute(payload);
       setRouteResult(data);
       setLastRoute(data);
+      registerPredictionForAlerts({
+        riskScore: data.overall_risk,
+        severity:
+          data.overall_risk >= 70
+            ? "Critical"
+            : data.overall_risk >= 50
+              ? "High"
+              : data.overall_risk >= 30
+                ? "Medium"
+                : "Low",
+        city: values.city,
+      });
       toast.success("Route scored");
     } catch (e) {
       toast.error(e.userMessage || "Route prediction failed");

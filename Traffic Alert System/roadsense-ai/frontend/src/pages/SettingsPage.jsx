@@ -3,6 +3,13 @@ import toast from "react-hot-toast";
 import { KeyRound, Save, UserCircle2 } from "lucide-react";
 import { updatePassword, updateProfile } from "../api/auth.js";
 import { useAuth } from "../context/AuthContext.jsx";
+import {
+  getPredictionAlertIntervalMin,
+  getPredictionAlertsEnabled,
+  requestBrowserNotificationPermission,
+  setPredictionAlertIntervalMin,
+  setPredictionAlertsEnabled,
+} from "../utils/predictionAlerts.js";
 
 export default function SettingsPage() {
   const { user, refreshUser } = useAuth();
@@ -13,6 +20,12 @@ export default function SettingsPage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [passwordBusy, setPasswordBusy] = useState(false);
+  const [predictionAlertsEnabled, setPredictionAlertsEnabledLocal] = useState(
+    getPredictionAlertsEnabled(),
+  );
+  const [predictionIntervalMin, setPredictionIntervalMinLocal] = useState(
+    getPredictionAlertIntervalMin(),
+  );
 
   const onSaveProfile = async (e) => {
     e.preventDefault();
@@ -32,6 +45,37 @@ export default function SettingsPage() {
     } finally {
       setProfileBusy(false);
     }
+  };
+
+  const onEnablePredictionAlerts = async (enabled) => {
+    try {
+      if (enabled) {
+        const perm = await requestBrowserNotificationPermission();
+        if (perm === "denied") {
+          toast.error(
+            "Browser notifications are blocked. Enable them in browser settings.",
+          );
+          setPredictionAlertsEnabledLocal(false);
+          setPredictionAlertsEnabled(false);
+          return;
+        }
+      }
+      setPredictionAlertsEnabledLocal(enabled);
+      setPredictionAlertsEnabled(enabled);
+      toast.success(`Prediction alerts ${enabled ? "enabled" : "disabled"}`);
+    } catch {
+      toast.error("Failed to update prediction alerts preference");
+    }
+  };
+
+  const onPredictionIntervalChange = (val) => {
+    const next = Number(val);
+    if (!Number.isFinite(next) || next < 1) return;
+    setPredictionIntervalMinLocal(next);
+    setPredictionAlertIntervalMin(next);
+    toast.success(
+      `Prediction interval set to ${next} minute${next > 1 ? "s" : ""}`,
+    );
   };
 
   const onUpdatePassword = async (e) => {
@@ -69,6 +113,49 @@ export default function SettingsPage() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
+        <section className="rounded-2xl border border-border bg-bg-card p-5 shadow-glass xl:col-span-2">
+          <h2 className="font-display text-lg font-semibold text-txt-primary">
+            Prediction notifications
+          </h2>
+          <p className="mt-1 text-sm text-txt-secondary">
+            First prediction triggers an immediate popup. After that, alerts
+            repeat at your selected interval.
+          </p>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="text-xs text-txt-secondary">
+                Enable prediction alerts
+              </label>
+              <select
+                className="mt-1 w-full rounded-lg border-border bg-bg-secondary px-3 py-2 text-sm"
+                value={predictionAlertsEnabled ? "on" : "off"}
+                onChange={(e) =>
+                  onEnablePredictionAlerts(e.target.value === "on")
+                }
+              >
+                <option value="on">On</option>
+                <option value="off">Off</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-txt-secondary">
+                Prediction alert interval
+              </label>
+              <select
+                className="mt-1 w-full rounded-lg border-border bg-bg-secondary px-3 py-2 text-sm"
+                value={predictionIntervalMin}
+                onChange={(e) => onPredictionIntervalChange(e.target.value)}
+              >
+                {[1, 2, 5, 10, 15, 30, 60].map((v) => (
+                  <option key={v} value={v}>
+                    {v === 60 ? "60 minutes (1 hour)" : `${v} minutes`}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </section>
+
         <section className="rounded-2xl border border-border bg-bg-card p-5 shadow-glass">
           <div className="mb-4 flex items-center gap-2">
             <UserCircle2 className="h-5 w-5 text-accent-primary" />

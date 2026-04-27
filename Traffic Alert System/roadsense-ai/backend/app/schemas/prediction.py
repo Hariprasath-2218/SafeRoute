@@ -83,6 +83,7 @@ class HistoryItem(BaseModel):
     risk_score: float
     severity_level: str
     city: str
+    weather_condition: str
     created_at: str
     latitude: float | None = None
     longitude: float | None = None

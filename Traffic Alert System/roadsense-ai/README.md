@@ -39,11 +39,17 @@ pip install -r requirements.txt
 3. **Run the API**:
 
    ```bash
-   uvicorn app.main:app --reload --port 8000
+   uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
    ```
 
-   - OpenAPI docs: `http://localhost:8000/docs`  
-   - Health: `GET /health`
+   - OpenAPI docs: `http://172.28.66.246:8001/docs`
+   - Health: `GET http://172.28.66.246:8001/health`
+   - LAN/mobile test: `http://172.28.66.246:8001/health`
+
+   If mobile cannot reach the API:
+   - Ensure phone and PC are on the same Wi-Fi/LAN
+   - Allow inbound TCP port `8001` in Windows Firewall
+   - Keep `BACKEND_BASE_URL` in mobile `.env` set to `http://172.28.66.246:8001`
 
 ### ML maintenance
 
@@ -69,7 +75,7 @@ npm install
 Create `frontend/.env` (see `.env.example`):
 
 ```
-VITE_API_URL=http://localhost:8000
+VITE_API_URL=http://172.28.66.246:8001
 VITE_GOOGLE_MAPS_API_KEY=your_key_here
 ```
 
@@ -87,18 +93,18 @@ JWT is stored as `roadsense_token` in `localStorage` and sent as `Authorization:
 
 ## Key API endpoints
 
-| Method | Path | Notes |
-|--------|------|--------|
-| POST | `/auth/register` | Returns JWT + user |
-| POST | `/auth/login` | Returns JWT + user |
-| GET | `/auth/me` | **Bearer required** |
-| POST | `/predict/point` | **Bearer required** |
-| POST | `/predict/route` | **Bearer required** |
-| GET | `/history/` | Pagination + filters |
-| GET | `/history/stats` | User aggregates |
-| GET | `/history/{id}` | Detail |
-| DELETE | `/history/{id}` | Delete |
-| GET | `/health` | Status |
+| Method | Path             | Notes                |
+| ------ | ---------------- | -------------------- |
+| POST   | `/auth/register` | Returns JWT + user   |
+| POST   | `/auth/login`    | Returns JWT + user   |
+| GET    | `/auth/me`       | **Bearer required**  |
+| POST   | `/predict/point` | **Bearer required**  |
+| POST   | `/predict/route` | **Bearer required**  |
+| GET    | `/history/`      | Pagination + filters |
+| GET    | `/history/stats` | User aggregates      |
+| GET    | `/history/{id}`  | Detail               |
+| DELETE | `/history/{id}`  | Delete               |
+| GET    | `/health`        | Status               |
 
 ## Security notes
 

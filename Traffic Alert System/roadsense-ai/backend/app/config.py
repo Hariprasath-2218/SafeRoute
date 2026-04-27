@@ -40,7 +40,8 @@ class Settings:
     # Matches any localhost / 127.0.0.1 port (Vite, etc.). Set CORS_ORIGIN_REGEX= to disable.
     CORS_ORIGIN_REGEX: str | None = os.getenv(
         "CORS_ORIGIN_REGEX",
-        r"https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+        # Localhost + private LAN ranges for mobile/web dev (10.x, 172.16-31.x, 192.168.x)
+        r"https?://(localhost|127\.0\.0\.1|10(?:\.\d{1,3}){3}|192\.168(?:\.\d{1,3}){2}|172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(:\d+)?$",
     ) or None
 
     # Paths

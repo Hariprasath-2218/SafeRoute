@@ -2,7 +2,7 @@
 from datetime import datetime
 
 from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from app.deps import get_current_user
 from app.database import get_database
@@ -32,8 +32,19 @@ def _serialize_user(doc: dict) -> UserPublic:
     )
 
 
+def _set_auth_cookie(response: Response, token: str) -> None:
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=60 * 60 * 24,
+    )
+
+
 @router.post("/register", response_model=TokenResponse)
-async def register(body: RegisterRequest) -> TokenResponse:
+async def register(body: RegisterRequest, response: Response) -> TokenResponse:
     """Create a new user with bcrypt-hashed password and return JWT."""
     db = get_database()
     existing = await db["users"].find_one({"email": body.email.lower().strip()})
@@ -46,13 +57,25 @@ async def register(body: RegisterRequest) -> TokenResponse:
     result = await db["users"].insert_one(doc)
     user_id = str(result.inserted_id)
     token = create_access_token({"sub": user_id})
+    _set_auth_cookie(response, token)
     created = await db["users"].find_one({"_id": result.inserted_id})
     return TokenResponse(access_token=token, user=_serialize_user(created))
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(body: LoginRequest) -> TokenResponse:
+async def login(body: LoginRequest, response: Response) -> TokenResponse:
     """Verify credentials and return JWT with user profile."""
+    return await _login_user(body, response)
+
+
+@router.post("/login-test", response_model=TokenResponse, include_in_schema=False)
+async def login_test(body: LoginRequest, response: Response) -> TokenResponse:
+    """Compatibility alias for direct route testing."""
+    return await _login_user(body, response)
+
+
+async def _login_user(body: LoginRequest, response: Response) -> TokenResponse:
+    """Shared login implementation for the auth route and compatibility alias."""
     db = get_database()
     user = await db["users"].find_one({"email": body.email.lower().strip()})
     if not user or not verify_password(body.password, user["hashed_password"]):
@@ -66,7 +89,14 @@ async def login(body: LoginRequest) -> TokenResponse:
     )
     user = await db["users"].find_one({"_id": user["_id"]})
     token = create_access_token({"sub": str(user["_id"])})
+    _set_auth_cookie(response, token)
     return TokenResponse(access_token=token, user=_serialize_user(user))
+
+
+@router.post("/logout")
+async def logout(response: Response) -> dict:
+    response.delete_cookie("access_token")
+    return {"ok": True}
 
 
 @router.get("/me", response_model=UserPublic)

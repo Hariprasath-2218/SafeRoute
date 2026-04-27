@@ -3,7 +3,11 @@ import { Link } from "react-router-dom";
 import { MapPin, ShieldAlert, Route, Target } from "lucide-react";
 import StatsCard from "./StatsCard.jsx";
 import RecentPredictions from "./RecentPredictions.jsx";
-import { fetchHistory, fetchHistoryStats, fetchModelInfo } from "../../api/prediction.js";
+import {
+  fetchHistory,
+  fetchHistoryStats,
+  fetchModelInfo,
+} from "../../api/prediction.js";
 import { formatPercent } from "../../utils/formatters.js";
 
 export default function Dashboard() {
@@ -18,7 +22,7 @@ export default function Dashboard() {
       try {
         const [s, hist, m] = await Promise.all([
           fetchHistoryStats(),
-          fetchHistory({ page: 1, limit: 6 }),
+          fetchHistory({ page: 1, limit: 10 }),
           fetchModelInfo().catch(() => null),
         ]);
         if (!cancelled) {
@@ -28,7 +32,11 @@ export default function Dashboard() {
         }
       } catch {
         if (!cancelled) {
-          setStats({ total_predictions: 0, alerts_count: 0, safe_routes_count: 0 });
+          setStats({
+            total_predictions: 0,
+            alerts_count: 0,
+            safe_routes_count: 0,
+          });
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -40,7 +48,9 @@ export default function Dashboard() {
   }, []);
 
   const acc =
-    model?.metrics?.accuracy != null ? formatPercent(model.metrics.accuracy, 1) : "—";
+    model?.metrics?.accuracy != null
+      ? formatPercent(model.metrics.accuracy, 1)
+      : "—";
 
   return (
     <div className="space-y-8">
@@ -88,7 +98,11 @@ export default function Dashboard() {
           <StatsCard
             title="Model accuracy"
             value={acc}
-            subtitle={model?.trained_at ? `Trained ${model.trained_at.slice(0, 10)}` : "Live model"}
+            subtitle={
+              model?.trained_at
+                ? `Trained ${model.trained_at.slice(0, 10)}`
+                : "Live model"
+            }
             icon={Target}
             accent="warning"
           />
@@ -100,9 +114,12 @@ export default function Dashboard() {
           <RecentPredictions items={recent} />
         </div>
         <div className="space-y-4 rounded-2xl border border-border bg-bg-card p-5 shadow-glass">
-          <h3 className="font-display text-lg font-semibold text-txt-primary">Quick actions</h3>
+          <h3 className="font-display text-lg font-semibold text-txt-primary">
+            Quick actions
+          </h3>
           <p className="text-sm text-txt-secondary">
-            Launch the geospatial workspace to score a point or an entire corridor.
+            Launch the geospatial workspace to score a point or an entire
+            corridor.
           </p>
           <div className="flex flex-col gap-3">
             <Link

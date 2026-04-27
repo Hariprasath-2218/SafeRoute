@@ -22,7 +22,7 @@ export default function Navbar({ onMenuClick }) {
           </button>
           <Link to="/" className="flex items-center gap-3">
             <img
-              src="/SafeRoute.jpeg"
+              src="/SafeRoute.png"
               alt=""
               className="h-9 w-9 rounded-xl border border-border object-cover shadow-lg"
             />
@@ -30,7 +30,9 @@ export default function Navbar({ onMenuClick }) {
               <span className="font-display text-lg font-semibold tracking-tight text-txt-primary">
                 Roadsense<span className="text-accent-primary"> AI</span>
               </span>
-              <span className="text-[11px] text-txt-secondary">SafeRoute mobile</span>
+              <span className="text-[11px] text-txt-secondary">
+                SafeRoute mobile
+              </span>
             </span>
           </Link>
         </div>
